@@ -132,19 +132,20 @@ class Trade_Algo:
             self.quant_index2=quant_index2
             self.quant_index3=quant_index3
             Data_API.set_pricing_date(orig_pd)
+
+            self.pnls = {'portfolio':self.portfolio.pnl_as_of_date,\
+            'portfolio1':self.portfolio1.pnl_as_of_date,\
+            'portfolio2':self.portfolio2.pnl_as_of_date,\
+            'portfolio3':self.portfolio3.pnl_as_of_date}
+            self.quant_indices = {'quant_index':self.quant_index,\
+                                  'quant_index1':self.quant_index1,\
+                                  'quant_index2':self.quant_index2,\
+                                  'quant_index3':self.quant_index3}
         except Exception as e:
             Data_API.set_pricing_date(orig_pd)
             raise e
 
     def back_test_summary(self):
-        self.pnls = {'portfolio':self.portfolio.pnl_as_of_date,\
-        'portfolio1':self.portfolio1.pnl_as_of_date,\
-        'portfolio2':self.portfolio2.pnl_as_of_date,\
-        'portfolio3':self.portfolio3.pnl_as_of_date}
-        self.quant_indices = {'quant_index':self.quant_index,\
-                              'quant_index1':self.quant_index1,\
-                              'quant_index2':self.quant_index2,\
-                              'quant_index3':self.quant_index3}
         output = ""
         if "portfolio" in self.used_vars:
             output += """portfolio:\n""" + str(self.portfolio.get_measures()) + """\n"""
@@ -157,4 +158,50 @@ class Trade_Algo:
 
         return output
 
+    def back_test_plot(self):
+        import matplotlib.pyplot as plt
+        import matplotlib.dates as mdates
+        fig = plt.figure()
+        all_lines = []
+        ax = fig.add_subplot(111)
+        ax.set_ylabel('PnL')
+        has_right_ax = False
+        if 'quant_index' in self.used_vars or \
+            'quant_index1' in self.used_vars or \
+            'quant_index2' in self.used_vars or \
+            'quant_index3' in self.used_vars:
+            has_right_ax = True
+        dates = [ x[0] for x in self.pnls['portfolio'] ]
+        for v in self.used_vars:
+            if 'portfolio' in v:
+                all_lines += ax.plot(dates, [x[1] for x in self.pnls[v]],label=v,linewidth=1)
 
+        if has_right_ax:
+            right_ax = ax.twinx()
+            for v in self.used_vars:
+                if 'index' in v:
+                    all_lines += right_ax.plot(dates, self.quant_indices[v],label=v,linewidth=1,ls='dotted')
+            
+            right_ax.set_ylabel('quant_index')
+
+        # format the ticks
+        years = mdates.YearLocator()   # every year
+        months = mdates.MonthLocator()  # every month
+        yearsFmt = mdates.DateFormatter('%Y')
+
+        ax.xaxis.set_major_locator(years)
+        ax.xaxis.set_major_formatter(yearsFmt)
+        ax.xaxis.set_minor_locator(months)
+        datemin = min(dates)
+        datemax = max(dates)
+        ax.set_xlim(datemin, datemax)
+        ax.format_xdata = mdates.DateFormatter('%Y-%m-%d')
+        ax.grid(True)
+
+
+        # rotates and right aligns the x labels, and moves the bottom of the
+        # axes up to make room for them
+        fig.autofmt_xdate()
+        fig.tight_layout()
+        plt.legend(all_lines,[l.get_label() for l in all_lines],loc='best')
+        plt.show()        
