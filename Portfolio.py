@@ -81,13 +81,20 @@ class Portfolio:
                 pnl += self.current_portfolio[key] * QI.price(key)
         return pnl
 
-    def get_measures(self):
+    def get_measures(self, as_str=False):
         ret = dict()
         ts = np.array([x[1] for x in self.pnl_as_of_date])
-        ret['return']="{0:.4f}".format(QI.price_return(ts))
-        ret['volatility']="{0:.4f}".format(QI.volatility(ts),4)
-        ret['draw_down']="{0:.4f}".format(QI.draw_down(ts),4)
-        ret['sharpe']="{0:.4f}".format(QI.sharpe(ts),4)
+        if as_str:
+            ret['return']="{0:.4f}".format(QI.price_return(ts))
+            ret['volatility']="{0:.4f}".format(QI.volatility(ts),4)
+            ret['draw_down']="{0:.4f}".format(QI.draw_down(ts),4)
+            ret['sharpe']="{0:.4f}".format(QI.sharpe(ts),4)
+        else:
+            ret['return']=QI.price_return(ts)
+            ret['volatility']=QI.volatility(ts)
+            ret['draw_down']=QI.draw_down(ts)
+            ret['sharpe']=QI.sharpe(ts)
+
         return ret
 
     def record_pnl(self):
