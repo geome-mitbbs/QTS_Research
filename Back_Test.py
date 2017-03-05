@@ -16,10 +16,6 @@ elif average(ticker,-25)>average(ticker,-10):
     portfolio.sell(ticker)
 quant_index.append(average(ticker,-25)/average(ticker,-10))
 """
-    print("No user strategy specified. To specify a strategy, write it into a txt file \
-and append as the first argument of the command")
-    print("Run the example strategy below" )
-    print( algo_msg )
     t = Trade_Algo(algo_msg)
 
 t.back_test(-250,-1,initial_cash=1000000)
