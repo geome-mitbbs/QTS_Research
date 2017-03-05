@@ -43,6 +43,13 @@ class Cache:
         if key in Cache.cache_dict.keys():
             return Cache.cache_dict[key]
 
+        try:
+            directory = os.path.dirname(__file__) + "\\data"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        except OSError as exception:
+            pass
+
         file_name = os.path.dirname(__file__) + "\\data\\"+ ticker + str(Pricing_Database.current_date)
         my_file = Path(file_name)
         if my_file.is_file():
