@@ -3,8 +3,6 @@ import inspect
 import sys
 import pydoc
 
-# from __future__ import print_function, division, absolute_import
-# import matplotlib.pyplot as plt
 try:
     from . import Data_API
 except:
@@ -278,12 +276,4 @@ def correlation(obj1, obj2, start=0, end=-1, price_feature='Close'):
         start += len(obj1)
 
     return np.corrcoef(obj1[start: (end + 1)], obj2[start: (end + 1)])[0, 1]
-
-# def plot(self):
-#     plt.figure()
-#     plt.plot(self.data)
-#     plt.title(self.name)
-#     plt.xlabel("days")
-#     plt.ylabel("stock price")
-#     plt.show()
 
