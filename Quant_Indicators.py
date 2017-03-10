@@ -185,6 +185,8 @@ def sharpe(obj, start=0, end=-1,price_feature='Close'):
     ndays = end - start + 1
     annual_return = (1 + price_return(obj,start,end)) ** (float(Data_API.Pricing_Database.trading_days) / ndays) - 1
     vol = volatility(obj,start,end)
+    if annual_return == 0:
+        return 0
     return annual_return / vol
 
 def all_indicators_doc():
