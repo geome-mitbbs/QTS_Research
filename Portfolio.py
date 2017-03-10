@@ -8,7 +8,7 @@ except:
     
 
 class Portfolio:
-    def __init__(self,init_cash_amt=0,init_pos=None,allow_short_cash=False,allow_short_sell=True):
+    def __init__(self,init_cash_amt=0,init_pos=None,allow_short_cash=False,allow_short_sell=True,liquidate_at_zero=True):
         self.pnl_as_of_date = []
         if init_pos==None:
             self.current_portfolio = {'cash':init_cash_amt+0.0}
@@ -17,10 +17,16 @@ class Portfolio:
         self.trade_list = []
         self.allow_short_cash = allow_short_cash
         self.allow_short_sell = allow_short_sell
-        
+        self.liquidate_at_zero = liquidate_at_zero
+
+    def check_and_liquidate(self):
+        if self.liquidate_at_zero and self.value() < 0:
+            self.current_portfolio = {'cash':0.0}
+
     def buy(self,ticker,qty=None,value=None,percent=None,price_feature='Close'):
         if not QI.is_biz_day(ticker):
             return
+        self.check_and_liquidate()
         if(qty==None and value==None and percent==None):
             percent = 1
         
@@ -42,9 +48,27 @@ class Portfolio:
             self.current_portfolio[ticker] = qty
         self.trade_list.append(("buy", ticker, qty, unit_px))
 
+    def flat(self,ticker,price_feature='Close'):
+        if not QI.is_biz_day(ticker):
+            return
+        self.check_and_liquidate()
+        unit_px = QI.price(ticker,price_feature=price_feature)
+        if not (ticker in self.current_portfolio.keys()):
+            return
+        else:
+            qty = self.current_portfolio[ticker]
+            self.current_portfolio['cash'] += unit_px * qty
+            self.current_portfolio.pop(ticker)
+            if qty>0:
+                self.trade_list.append(("sell", ticker, qty, unit_px))
+            elif qty<0:
+                self.trade_list.append(("buy", ticker, -qty, unit_px))
+            return
+
     def sell(self,ticker,qty=None,value=None,percent = None,price_feature='Close'):
         if not QI.is_biz_day(ticker):
             return
+        self.check_and_liquidate()
         if(qty==None and value==None and percent==None):
             percent = 1
         
