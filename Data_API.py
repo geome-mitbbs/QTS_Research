@@ -5,6 +5,8 @@ from pathlib import Path
 import numpy as np
 import os
 import time
+import urllib.request
+import pandas as pd
 
 class Pricing_Database:
     current_date = np.datetime64(datetime.date.today())
@@ -12,6 +14,7 @@ class Pricing_Database:
     trading_days = 250
     lazy_update_data = False
     lazy_update_data_period = 7
+    data_source = "quandl" # yahoo, etc
 
     def __init__(self):
         pass
@@ -43,14 +46,36 @@ def date_diff(dt1,dt2):
 class Cache:
     cache_dict = dict()
     quandl_key = None
-    quandl_delay = None
+    data_request_delay = None
     def __init__(self):
         pass
 
+    def get_price_yahoo(self,ticker):
+        try:
+            if Cache.data_request_delay != None:
+                time.sleep(Cache.data_request_delay)
+            base_url = "http://ichart.finance.yahoo.com/table.csv?s="
+            file_name = os.path.dirname(__file__) + "\\data\\"+ "yahoo_"+ticker+"_"+str(Pricing_Database.current_date)
+            urllib.request.urlretrieve(base_url+ticker, file_name)
+            df = pd.read_csv(file_name, index_col=False, header=0)
+            df['Open'] = df['Open']*df['Adj Close']/df['Close']
+            df['High'] = df['High']*df['Adj Close']/df['Close']
+            df['Low'] = df['Low']*df['Adj Close']/df['Close']
+            df['Close'] = df['Adj Close']
+            df['Date'] = df['Date'].apply(lambda x:np.datetime64(x))
+            df = df[['Date','Open',  'High',  'Low',  'Close', 'Volume']]
+            df = df.set_index(['Date'])
+            df.dropna(inplace=True)
+            df = df.iloc[::-1]
+            return df
+        except Exception as e:
+            print("YAHOO/"+ticker)
+            raise e
+
     def get_price_quandl(self,ticker ):
         try:
-            if Cache.quandl_delay != None:
-                time.sleep(Cache.quandl_delay)
+            if Cache.data_request_delay != None:
+                time.sleep(Cache.data_request_delay)
             if Cache.quandl_key != None:
                 df = quandl.get("WIKI/"+ticker, authtoken=Cache.quandl_key)
             else:
@@ -64,9 +89,9 @@ class Cache:
         df.dropna(inplace=True)
         return df
 
-    def get_ticker_data(self,ticker):
+    def get_ticker_data(self,ticker,refresh_source=False):
         key = ticker + str(Pricing_Database.current_date)
-        if key in Cache.cache_dict.keys():
+        if (not refresh_source) and key in Cache.cache_dict.keys():
             return Cache.cache_dict[key]
 
         try:
@@ -79,7 +104,18 @@ class Cache:
         file_name = os.path.dirname(__file__) + "\\data\\"+ ticker + str(Pricing_Database.current_date)
         orig_file_name = file_name
         my_file = Path(file_name)
-        if my_file.is_file():
+
+        if refresh_source:
+            if Pricing_Database.data_source == "quandl":
+                data = self.get_price_quandl(ticker)
+            elif Pricing_Database.data_source == "yahoo":
+                data = self.get_price_yahoo(ticker)
+            else:
+                raise Exception("No data source")
+
+            with open(orig_file_name,"wb") as file:
+                pkl.dump(data,file,protocol=pkl.HIGHEST_PROTOCOL)
+        elif my_file.is_file():
             with open(file_name,"rb") as file:
                 data = pkl.load(file)
         else:
@@ -97,7 +133,13 @@ class Cache:
                     try_time += 1
 
             if not found_file:
-                data = self.get_price_quandl(ticker)
+                if Pricing_Database.data_source == "quandl":
+                    data = self.get_price_quandl(ticker)
+                elif Pricing_Database.data_source == "yahoo":
+                    data = self.get_price_yahoo(ticker)
+                else:
+                    raise Exception("No data source")
+
                 with open(orig_file_name,"wb") as file:
                     pkl.dump(data,file,protocol=pkl.HIGHEST_PROTOCOL)
 
