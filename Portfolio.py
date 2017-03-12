@@ -112,11 +112,13 @@ class Portfolio:
             ret['return']="{0:.4f}".format(QI.price_return(ts))
             ret['volatility']="{0:.4f}".format(QI.volatility(ts),4)
             ret['draw_down']="{0:.4f}".format(QI.draw_down(ts),4)
+            ret['max_draw_down'] = "{0:.4f}".format(QI.max_draw_down(ts),4)
             ret['sharpe']="{0:.4f}".format(QI.sharpe(ts),4)
         else:
             ret['return']=QI.price_return(ts)
             ret['volatility']=QI.volatility(ts)
             ret['draw_down']=QI.draw_down(ts)
+            ret['max_draw_down'] =QI.max_draw_down(ts)
             ret['sharpe']=QI.sharpe(ts)
 
         return ret

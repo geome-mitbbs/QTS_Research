@@ -148,6 +148,28 @@ def volatility(obj, start=0, end=-1,price_feature='Close'):
     vol = np.sqrt(Data_API.Pricing_Database.trading_days) * std
     return vol
 
+def max_draw_down(obj, start=0, end=-1, price_feature='Close'):
+    if isinstance(obj,str):
+        obj = prices(obj,start,end,price_feature)
+        start = 0
+        end = -1
+
+    if end == -1:
+        # end = -1 is a corner case here since (end+1) will be 0
+        end = len(obj) - 1
+
+    draw_downs = []
+    current_max = None
+    for i in range(start,end+1):
+        if current_max == None:
+            current_max = obj[i]+0.0
+        elif obj[i]>current_max:
+            current_max = obj[i]+0.0
+        draw_downs.append((obj[i]-current_max)/current_max)
+
+    max_d = np.min(draw_downs)
+    return min([0.0,max_d])
+
 def draw_down(obj, start=0, end=-1, price_feature='Close'):
     """
     obj: the underlyer ticker to price of. Or it can be an numpy array
